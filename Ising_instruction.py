@@ -2,7 +2,7 @@
 # for the functions below, we need to write arguments, return variables and a brief description for each of them.
 # unfinished yet
 
-def initialize_lattice(n): # the lattice will be represnted by a n x n matrix 
+def lattice_gerator(n): # the lattice will be represnted by a n x n matrix 
 ''' 
 The initialization of lattice should be the first step of simulation. In this function, 
 we give the lattice a random initial state by built-in function: np.random.random(), the
@@ -40,7 +40,7 @@ This fucntion calculate the average magnetization. lat = lattice created in the 
     return np.sum(lat)/(len(lat))
 
 
-def Ising_simulation(n, steps, J, T):
+def Ising_simulation(n, steps, J, T, r):
     '''
     '''
     
@@ -48,6 +48,17 @@ def Ising_simulation(n, steps, J, T):
     
     lattice = lattice_gerator(n)
     energies = []
+    E0 = 0  # initial total energy
+    for i in range(n):
+        for j in range(n):
+            s_k = lattice[i][j]
+            s_i_sum = lattice[i+1][j] + lattice[i][j+1]
+            E0 += Energy(s_k,s_i_sum,J)
+    energies.append(E0)
+        
+    corr_sigma_i = []
+    corr_sigma_j = []
+    
     
     for step in range(steps):
         # We will use this random generator to obtain the random indexes for the random spin site on the lattice
@@ -64,19 +75,25 @@ def Ising_simulation(n, steps, J, T):
         
         if delta_E < 0 or np.random.random() < np.exp(-delta_E/(k_b*T)): # If any of this two conditions is met, then the spin is flipped.
             lattice[i][j] = -lattice[i][j]
+            energies.append(energies[-1]+delta_E) # This line will add the energy values for each spin site to a list which will then use to find the avarge energy
             
-        energies.append(E) # This line will add the energy values for each spin site to a list which will then use to find the avarge energy
+            corr_sigma_i.append(lattice[0][0])   # periodical structure ensure a random selection of one lattice point
+            coor_sigma_j.append(lattice[-r][0]) # I am not sure if this is correct
+
         
     # Advcice if we should use separete function to do the calculation of the evarage_energy and the evarage_energy^2.
-    average_energy = np.sum(np.exp(-energies/(k_b*T))*energies)/np.sum(np.exp(-energies/(k_b*T)))
+    Z = np.sum(np.exp(-energies/(k_b*T)))     
+    average_energy = np.sum(np.exp(-energies/(k_b*T))*energies)/Z
     
-    average_energy_2 = np.sum(np.exp(-(energies**2)/(k_b*T))*(energies**2)/np.sum(np.exp(-(energies**2)/(k_b*T))
+    average_energy_2 = np.sum(np.exp(-(energies)/(k_b*T))*(energies**2)/Z
     
     specific_heat = (average_energy_2 - average_energy**2)/(T**2)
                                                                                  
-     M = Magnetization(lattice)    
+    M = Magnetization(lattice)    
      
-     #We need to add the correlation calculations                                                                             
+    #We need to add the correlation calculations                                                                             
+    G1 = np.sum(np.exp(-energies/k_b*T)*corr_sigma_i*corr_sigma_j)/Z
+    G2 = (np.sum(np.exp(-energies/k_b*T)*corr_sigma_i)/Z)**2
+    G = G1 - G2    
                               
-    return specific_heat, M 
-
+    return specific_heat, M, G 
